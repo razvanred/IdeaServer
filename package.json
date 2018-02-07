@@ -1,0 +1,18 @@
+{
+  "name": "ideaserver",
+  "version": "1.0.0",
+  "description": "Server-side for IdeaTracker app",
+  "main": "principale.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node principale.js"
+  },
+  "author": "Razvan Rosu",
+  "license": "ISC",
+  "dependencies": {
+    "email-existence": "^0.1.5",
+    "mysql": "^2.15.0",
+    "nodemailer": "^4.4.2",
+    "xoauth2": "^1.2.0"
+  }
+}
