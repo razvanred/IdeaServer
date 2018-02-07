@@ -12,7 +12,7 @@ var transporter = nodemailer.createTransport({
 
 const mailOptions = {
     from: 'Bill Gates <razvan@its.me>', // sender address
-    to: 'alvisebruniera@gmail.com', // list of receivers
+    to: 'razvanred99@gmail.com', // list of receivers
     subject: 'A lot of money are waiting you', // Subject line
     html: '<h1>Trust me</h1>'// plain text body
 };
