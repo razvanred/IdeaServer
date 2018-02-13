@@ -1,18 +1,27 @@
 {
   "name": "ideaserver",
-  "version": "1.0.0",
-  "description": "Server-side for IdeaTracker app",
+  "version": "0.1.0",
+  "description": "Server-side of IdeaTracker application, wrote in Javascript with Node.js, Express and NodeMailer",
   "main": "principale.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node principale.js"
   },
-  "author": "Razvan Rosu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razvanred99/IdeaServer.git"
+  },
+  "author": "Razvan Rosu <razvanred99@gmail.com>",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/razvanred99/IdeaServer/issues"
+  },
+  "homepage": "https://github.com/razvanred99/IdeaServer#readme",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "email-existence": "^0.1.5",
+    "express": "^4.16.2",
     "mysql": "^2.15.0",
-    "nodemailer": "^4.4.2",
-    "xoauth2": "^1.2.0"
+    "node-mailer": "^0.1.1"
   }
 }

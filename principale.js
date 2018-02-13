@@ -1,8 +1,12 @@
-//const http = require('http');
-//const mysql = require('mysql');
+const express = require('express');
+const app = express();
+const port = process.env.port || 8000;
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
+const url = require('url');
 const nodemailer = require('nodemailer');
 
-var transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: 'ideatracker.group@gmail.com',
@@ -10,54 +14,141 @@ var transporter = nodemailer.createTransport({
     }
 });
 
-const mailOptions = {
-    from: 'Bill Gates <razvan@its.me>', // sender address
-    to: 'razvanred99@gmail.com', // list of receivers
-    subject: 'A lot of money are waiting you', // Subject line
-    html: '<h1>Trust me</h1>'// plain text body
-};
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
 
-require('email-existence').check(mailOptions.to, function (err, res) {
+app.use(bodyParser.json());
 
-    if (err) return console.log("error: %s", err);
+const connection = mysql.createConnection({
+    "host": "192.168.64.2",
+    "user": "user",
+    "password": "password",
+    "database": "IdeaTrackerDB"
+});
 
-    if (res) {
+connection.connect(function (err) {
+    if (err) throw err;
+    console.log("Got it!");
+    next();
+});
 
-        transporter.sendMail(mailOptions, function (err, info) {
-            if (err)
+function next() {
+    app.route('/')
+        .get((request, response) => {
+            console.log("Connected");
+
+            try {
+                console.log(request.body.username);
+                //throw err;
+                response.send({status: true});
+            } catch (err) {
                 console.log(err);
-            else
-                console.log(info);
+                response.send({status: false});
+            }
+        })
+        .post((request, response) => {
+            response.send({a: 678});
         });
 
-    }else return console.error("Mail doesn't exists");
-});
+    app.route('/confirm')
+        .get((request, response) => {
+            const query = url.parse(request.url, true).query;
 
-/*const connection=mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    password:""
-});
+            connection.query('UPDATE user SET confirm=1 where username="' + query.username + '" AND password="' + query.password + '"', (err => {
+                if (err) {
+                    response.send({status: false, errorCode: 300});
+                    return console.error("Not confirmed: %s", err);
+                } else
+                    response.send({status: true});
+            }));
+        });
 
-connection.connect(function(err){
-    if(err) throw err;
-    console.log("Connected");
+    app.route('/user')
+        .put((request, response) => {
 
-    connection.query("USE IdeaDB;",function(err,result){
-        if(err) throw err;
-        console.log("RESULT: "+result)
+            const mail = request.body.mail.replace("'", "\'");
+            const username = request.body.username.replace("'", "\'");
+            const password = request.body.password.replace("'", "\'");
+
+            require('email-existence').check(mail, (err, res) => {
+                if (err) {
+                    console.log("Mail doesn't exist: %s", err);
+                    return response.send({status: false, errorCode: 100});
+                } else {
+                    const mailOptions = {
+                        from: 'IdeaTracker Staff <ideatracker.group@gmail.com>',
+                        to: mail,
+                        subject: 'Confirm your registration',
+                        html: 'Dear ' + username + ', ' + '<a href="http://192.168.0.106:' + port + '/confirm/?username=' + username + '&password=' + password + '">click here to confirm</a>'
+                    }
+
+                    connection.query("INSERT INTO user VALUES ('" + mail + "','" + username + "','" + password + "','" + request.body.nome.replace("'", "\'") + "','" + request.body.cognome.replace("'", "\'") + "',0)", (err) => {
+                        if (err) {
+                            console.error("Usual error: %s", err);
+                            console.log('ok but why? ' + response);
+                            return response.send({status: false, errorCode: 101});
+                        } else {
+                            transporter.sendMail(mailOptions, function (err, info) {
+                                if (err)
+                                    console.log(err);
+                                else
+                                    console.log(info);
+                            });
+                            response.send({status: true});
+                        }
+                    });
+                }
+            });
+
+
+        })
+        .get((request, response) => {
+
+            const query = url.parse(request.url, true).query;
+
+            console.log("Loggin in: %s with passkey %s", query.username, query.password);
+
+            connection.query("SELECT * FROM user where username='" + query.username.replace("'", "\'") + "'", (err, result, fields) => {
+                if (err || typeof result === 'undefined' || result.length <= 0 || result[0].password !== query.password) {
+                    console.error("Login failed: %s", err);
+                    response.send({status: false, errorCode: 200});
+                } else {
+                    if (result[0].confirm === 0) {
+                        console.error("Mail not confirmed: %s", err);
+                        response.send({status: false, errorCode: 201});
+                    } else {
+
+                        connection.query("SELECT COUNT(*) as count FROM app", (err, r, fields) => {
+                            if (err) {
+                                console.error("Cannot count applications: %s", err);
+                                response.send({status: false, errorCode: 201});
+                            } else {
+                                response.send({
+                                    status: true, data: {
+                                        nome: result[0].nome,
+                                        cognome: result[0].cognome,
+                                        mail: result[0].mail,
+                                        appcount: r[0].count
+                                    }
+                                });
+                            }
+                        });
+
+                    }
+                }
+            });
+
+        });
+
+    app.route('/apps')
+        .get((request, response) => {
+            connection.query("SELECT * FROM app", (err, results, fields) => {
+                response.send(results);
+            });
+        });
+
+    app.listen(port, function () {
+        console.log("Listening on port %d", port);
     });
-
-    const sql="INSERT INTO UTENTE VALUES ('razvan','pass','Razvan','Rosu');";
-    connection.query(sql,function(err,result){
-        if(err) throw err;
-        console.log("RESULT: "+result);
-    });
-});
-
-
-http.createServer(function(request,response){
-    response.writeHead(200,{'Content-Type':'text/plain'});
-    response.write('working');
-    response.end();
-}).listen(8000);*/
+}
