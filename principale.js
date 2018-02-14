@@ -81,7 +81,7 @@ function next() {
                         to: mail,
                         subject: 'Confirm your registration',
                         html: 'Dear ' + username + ', ' + '<a href="http://192.168.0.106:' + port + '/confirm/?username=' + username + '&password=' + password + '">click here to confirm</a>'
-                    }
+                    };
 
                     connection.query("INSERT INTO user VALUES ('" + mail + "','" + username + "','" + password + "','" + request.body.nome.replace("'", "\'") + "','" + request.body.cognome.replace("'", "\'") + "',0)", (err) => {
                         if (err) {
@@ -119,7 +119,7 @@ function next() {
                         response.send({status: false, errorCode: 201});
                     } else {
 
-                        connection.query("SELECT COUNT(*) as count FROM app", (err, r, fields) => {
+                        connection.query("SELECT COUNT(*) as count FROM app,user, programmatore WHERE app.appid=programmatore.fkappid AND programmatore.fkuser=user.mail AND user.username='" + query.username + "'", (err, r, fields) => {
                             if (err) {
                                 console.error("Cannot count applications: %s", err);
                                 response.send({status: false, errorCode: 201});
@@ -143,8 +143,18 @@ function next() {
 
     app.route('/apps')
         .get((request, response) => {
-            connection.query("SELECT * FROM app", (err, results, fields) => {
-                response.send(results);
+
+            console.log("uii");
+            const query = url.parse(request.url, true).query;
+            console.log("done");
+
+            connection.query("SELECT app.nome AS appname,username,website FROM app, user, programmatore WHERE app.appid=programmatore.fkappid AND programmatore.fkuser=user.mail AND user.username='" + query.username + "'", (err, results, fields) => {
+                if (err) {
+                    console.error("Errore nella query: %s", err);
+                    response.send({status: false, errorCode: 400});
+                }
+                else
+                    response.send({status: true, data: results});
             });
         });
 
